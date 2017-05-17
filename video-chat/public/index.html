@@ -1,0 +1,228 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>
+<title> soup server  </title>
+<style type="text/css">
+	.room {
+		cursor: pointer;
+	} 
+</style>
+
+
+<script src='/dotEngine.min.js'></script>
+
+<script type='text/javascript'>
+
+
+let appkey = 'dotcc';
+let appSecret = 'dotcc';
+let room = 'dotcc';
+let user = Math.random().toString(36).substring(7);
+
+
+let localVideo = null;
+let remoteContainer = null;
+
+
+let dotEngine = null;
+let localStream = null;
+
+
+
+function init() {
+
+	localVideo = document.getElementById('local_video');
+	remoteContainer = document.getElementById('remote_container');
+
+
+	dotEngine = new DotEngine();
+	localStream = new DotStream({audio:true,video:true});
+
+	localStream.addListener('errors', (error) => {
+
+		console.log('errors ', error);
+	});
+
+	dotEngine.addListener('addLocalStream',(stream) => {
+
+		console.log('addLocalStream ', stream);
+		playVideo(localVideo,stream.mediastream);
+	});
+
+	dotEngine.addListener('removeLocalStream', (stream) => {
+
+		console.log('removeLocalStream ', stream);
+	});
+
+	dotEngine.addListener('addRemoteStream', (stream) => {
+		console.log('addRemoteStream ', stream);
+
+		addRemoteVideo(stream.streamId, stream.mediastream);
+	});
+
+	dotEngine.addListener('removeRemoteStream', (stream) => {
+
+		console.log('removeRemoteStream ', stream);
+
+		removeRemoteVideo(stream.streamId, stream.mediastream);
+	});
+
+	dotEngine.addListener('state', (newState) => {
+
+		console.log('state change ', newState);
+
+	});
+
+	dotEngine.addListener('peerConnected', (peerId) => {
+
+		console.log('new peer come ', peerId);
+	});
+
+	dotEngine.addListener('peerRemoved', (peerId) => {
+
+		console.log('peer has leave ', peerId);
+	});
+
+	dotEngine.addListener('muteRemoteVideo',(stream,muted) => {
+
+		console.log('remote stream ', stream.streamId);
+
+		console.log('remote stream video muted ', muted);
+
+	});
+
+	dotEngine.addListener('muteRemoteAudio',(stream, muted) => {
+		
+		console.log('remote stream ', stream.streamId);
+
+		console.log('remote stream audio muted ', muted);
+	});
+
+	dotEngine.addStream(localStream);
+
+
+	dotEngine.generateTestToken(appkey,appSecret,room,user,(error,token) => {
+
+		console.log(error, token);
+
+		if(!error) {
+			dotEngine.joinRoom(token);
+		}
+	});
+	
+
+
+}
+
+
+
+function playVideo(element, stream) {
+	if ('srcObject' in element) {
+		element.srcObject = stream;
+	}
+	else {
+		element.src = window.URL.createObjectURL(stream);
+	}
+	element.play();
+	element.volume = 0;
+}
+
+
+function addRemoteVideo(id, stream) {
+	let element = document.createElement('video');
+	remoteContainer.appendChild(element);
+	element.id = 'remote_' + id;
+	element.width = 320;
+	element.height = 240;
+	element.srcObject = stream;
+	element.play();
+	element.volume = 0;
+	element.controls = true;
+}
+
+function removeRemoteVideo(id, stream) {
+	console.log('Remote video removed id: ' + id);
+	let element = document.getElementById('remote_' + id);
+	if (element) {
+		element.pause();
+		element.srcObject = null;
+		remoteContainer.removeChild(element);
+	}
+	else {
+		console.log('Remote video element not found');
+	}
+}
+
+function removeAllRemoteVideo() {
+	while (remoteContainer.firstChild) {
+		remoteContainer.firstChild.pause();
+		remoteContainer.firstChild.srcObject = null;
+		remoteContainer.removeChild(remoteContainer.firstChild);
+	}
+}
+
+function updateView() {
+	if (peerConnection) {
+		hideElement('roomsSelect');
+		showElement('conference');
+		enabelElement('disconnect_button');
+	}
+	else {
+		showElement('roomsSelect');
+		hideElement('conference');
+		disableElement('disconnect_button');
+	}
+}
+
+function enabelElement(id) {
+	let element = document.getElementById(id);
+	if (element) {
+		element.removeAttribute('disabled');
+	}
+}
+
+function disableElement(id) {
+	let element = document.getElementById(id);
+	if (element) {
+		element.setAttribute('disabled', '1');
+	}		
+}
+
+function hideElement(id) {
+	let element = document.getElementById(id);
+	if (element) {
+		element.style.display = 'none';
+	}
+}
+
+function showElement(id) {
+	let element = document.getElementById(id);
+	if (element) {
+		element.style.display = 'block';
+	}		
+}
+ 
+</script>
+</head>
+<body onload="init();">
+	<h1>DotEngine  Demo</h1>
+	<div id="roomsSelect">
+
+	</div>
+
+	<br/>
+
+	<div id="conference">
+		<div>
+			Local video<br />
+			<video id="local_video" autoplay style="width: 320px; height: 240px; border: 1px solid black;"></video>
+			<br/>
+			<span id="state_span"></span>
+		</div>
+		Remote videos:
+		<br />
+		<div id="remote_container"></div>
+	</div>
+</body>
+</html>
