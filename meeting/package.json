@@ -1,0 +1,11 @@
+{
+  "name": "meeting",
+  "version": "1.0.0",
+  "description": "dotEngine meeting demo",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "bulma": "^0.5.1",
+    "express": "^4.15.4"
+  }
+}

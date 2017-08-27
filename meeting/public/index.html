@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hello DotEngine</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.5.1/css/bulma.min.css">
+
+	<script src='/dotEngine.min.js'></script>
+	<style>
+
+		@media (min-width:769px) {
+			.columns:not(.is-desktop) {
+				display: block;
+				overflow: hidden;
+			}
+			.column.is-one-third  {
+				display: block;
+				float: left;
+			}
+			.column.is-one-third video {
+				bottom: 0;
+				left: 0;
+				position: absolute;
+				right: 0;
+				top: 0;
+				height: 100%;
+				width: 100%;
+			}
+		}
+		
+	</style>
+
+	<script type='text/javascript'>
+
+		let appkey = 'dotcc';
+		let appSecret = 'dotcc';
+		let room = 'dotcc';
+		let user = Math.random().toString(36).substring(7);
+
+		let remoteStreams = [];
+		let videoContainer = null;
+
+
+		let dotEngine = null;
+		let localStream = null;
+
+
+		function init() {
+
+			videoContainer = document.getElementById('videoContainer');
+
+			dotEngine = new DotEngine();
+			localStream = new DotStream({audio:true,video:true});
+
+			localStream.addListener('errors', (error) => {
+				console.log('errors ', error);
+			});
+			
+			localStream.setupLocalMedia();
+			
+			localStream.addListener('initLocalStream', () => {
+
+				console.log('initLocalStream ');
+				addVideo(localStream.streamId,localStream.mediastream);
+			});
+
+
+			localStream.addListener('shutdownLocalMedia',()=> {
+				console.log('shutdownLocalMedia');
+			});
+
+			dotEngine.addListener('addLocalStream',(stream) => {
+
+				console.log('addLocalStream ', stream);
+			});
+
+			dotEngine.addListener('removeLocalStream', (stream) => {
+
+				console.log('removeLocalStream ', stream);
+			});
+
+			dotEngine.addListener('addRemoteStream', (stream) => {
+
+				console.log('addRemoteStream ', stream);
+				addVideo(stream.streamId,stream.mediastream);
+
+			});
+
+			dotEngine.addListener('removeRemoteStream', (stream) => {
+
+				console.log('removeRemoteStream ', stream);
+
+				removeVideo(stream.streamId, stream.mediastream);
+			});
+
+			dotEngine.addListener('state', (newState) => {
+
+				console.log('state change ', newState);
+
+			});
+
+			dotEngine.addListener('peerConnected', (peerId) => {
+
+				console.log('new peer come ', peerId);
+			});
+
+			dotEngine.addListener('peerRemoved', (peerId) => {
+
+				console.log('peer has leave ', peerId);
+			});
+
+			dotEngine.addListener('muteRemoteVideo',(stream,muted) => {
+
+				console.log('remote stream ', stream.streamId);
+
+				console.log('remote stream video muted ', muted);
+
+			});
+
+			dotEngine.addListener('muteRemoteAudio',(stream, muted) => {
+				
+				console.log('remote stream ', stream.streamId);
+
+				console.log('remote stream audio muted ', muted);
+			});
+
+
+			dotEngine.addListener('audioLevel', (stream, audioLevel) => {
+				
+				console.log('stream  audioLevel ', stream.streamId, ' audioLevel ', audioLevel);
+			});
+
+			dotEngine.addListener('joined', (users) => {
+
+				console.log('joind ', users);
+
+				dotEngine.addStream(localStream);
+
+			});
+
+
+			dotEngine.generateTestToken(appkey,appSecret,room,user,(error,token) => {
+
+				console.log(error, token);
+
+				if(!error) {
+					dotEngine.joinRoom(token);
+				}
+			});
+		}
+		
+
+		function addVideo(id, stream) {
+			let element = document.createElement('video');
+			element.id = 'stream_' + id;
+			element.srcObject = stream;
+			element.play();
+			element.volume = 1.0;
+			element.controls = false;
+
+			let column = createElement();
+			let contain = column.querySelector("#videoContain");
+			
+			contain.appendChild(element);
+			column.id = 'stream_' + id;
+			videoContainer.appendChild(column);
+		}
+
+		function removeVideo(id, stream) {
+			console.log('Remote video removed id: ' + id);
+			let element = document.getElementById('stream_' + id);
+			if (element) {
+				let video = element.querySelector('video');
+				if(video){
+					video.pause();
+					video.srcObject = null;
+				}
+				videoContainer.removeChild(element);
+			}
+			else {
+				console.log('Remote video element not found');
+			}
+		}
+
+
+		function createElement(){
+			var wrapper= document.createElement('div');
+			wrapper.innerHTML = '<div class="column is-one-third"><figure class="image is-3by2" id="videoContain"></figure></div>';
+			return wrapper.firstChild;
+		}
+
+	</script>
+
+  </head>
+  <body onload="init();">
+	  
+	<section class="hero is-primary is-medium">
+		<!-- Hero header: will stick at the top -->
+		<div class="hero-head">
+			<header class="nav">
+			<div class="container">
+				<div class="nav-left">
+				<a class="nav-item is-active">
+					DotEngine
+				</a>
+				</div>
+				<span class="nav-toggle">
+				<span></span>
+				<span></span>
+				<span></span>
+				</span>
+				<div class="nav-right nav-menu">
+					<a class="nav-item">
+						Examples
+					</a>
+					<a class="nav-item">
+						Documentation
+					</a>
+				</div>
+			</div>
+			</header>
+		</div>
+
+		<!-- Hero content: will be in the middle -->
+		<div class="hero-body">
+			<div class="container has-text-centered">
+			<h1 class="title">
+				DotEngine
+			</h1>
+			<h2 class="subtitle">
+				The cutting edge WebRTC SDK
+			</h2>
+			</div>
+		</div>
+	</section>
+
+	<section class="section is-medium">
+		<div class="container" >
+			<div class="columns" id="videoContainer">
+				<!--<div class="column is-one-third">
+					<figure class="image is-3by2">
+						<img src="http://bulma.io/images/placeholders/480x320.png">
+					</figure>
+				</div>-->
+			</div>
+		</div>
+
+	</section>
+
+
+	<footer class="footer">
+		<div class="container">
+			<div class="content has-text-centered">
+			<p>
+				Lovely made by dotEngine 
+			</p>
+			</div>
+		</div>
+	</footer>
+
+  </body>
+</html>
