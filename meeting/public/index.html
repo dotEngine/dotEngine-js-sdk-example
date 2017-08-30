@@ -58,12 +58,12 @@
 				console.log('errors ', error);
 			});
 			
-			localStream.setupLocalMedia();
+			//localStream.setupLocalMedia();
 			
 			localStream.addListener('initLocalStream', () => {
 
 				console.log('initLocalStream ');
-				addVideo(localStream.streamId,localStream.mediastream);
+				addVideo(localStream.streamId,localStream.mediastream,true);
 			});
 
 
@@ -152,12 +152,19 @@
 		}
 		
 
-		function addVideo(id, stream) {
+		function addVideo(id, stream, local) {
 			let element = document.createElement('video');
 			element.id = 'stream_' + id;
 			element.srcObject = stream;
 			element.play();
-			element.volume = 1.0;
+
+			if(local){
+				element.volume = 0;
+			} else {
+				element.volume = 1.0;
+			}
+		
+			
 			element.controls = false;
 
 			let column = createElement();
